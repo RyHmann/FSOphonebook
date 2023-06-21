@@ -1,3 +1,5 @@
+require('dotenv').config()
+const Contact = require('./models/contact')
 const express = require('express')
 const app = express()
 const morgan = require('morgan')
@@ -9,30 +11,7 @@ app.use(express.json())
 morgan.token('body', function (req, res) {return JSON.stringify(req.body)})
 app.use(morgan('tiny'))
 
-let persons = [
-    { 
-      "id": 1,
-      "name": "Arto Hellas", 
-      "number": "040-123456"
-    },
-    { 
-      "id": 2,
-      "name": "Ada Lovelace", 
-      "number": "39-44-5323523"
-    },
-    { 
-      "id": 3,
-      "name": "Dan Abramov", 
-      "number": "12-43-234345"
-    },
-    { 
-      "id": 4,
-      "name": "Mary Poppendieck", 
-      "number": "39-23-6423122"
-    }
-]
-
-const PORT = process.env.PORT || 3001
+const PORT = process.env.PORT
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`)
 })
@@ -43,18 +22,15 @@ app.get('/info', (request, response) => {
 })
 
 app.get('/api/persons', (request, response) => {
-    response.json(persons)
+    Contact.find({}).then(contact => {
+        response.json(contact)
+    })
 })
 
 app.get('/api/persons/:id', (request, response) => {
-    const id = Number(request.params.id)
-    const person = persons.find(person => person.id === id)
-    
-    if (person) {
-        response.json(person)
-    } else {
-        response.status(404).end()
-    }
+    Contact
+        .findById(request.params.id)
+        .then(contact => response.json(contact))
 })
 
 app.delete('/api/persons/:id', (request, response) => {
@@ -76,22 +52,10 @@ app.post('/api/persons', (request, response) => {
         })
     }
 
-    if (persons.some(name => name.name === body.name)) {
-        return response.status(400).json({
-            error: "person already exists in phonebook"
-        })
-    }
-
-    const person = {
-        id: getRandomInt(1000),
+    const person = new Contact({
         name: body.name,
         number: body.number
-    }
+    })
 
-    persons = persons.concat(person)
-    response.json(person)
+    person.save().then(savedPerson => {response.json(savedPerson)})
 })
-
-const getRandomInt = (max) => {
-    return Math.floor(Math.random() * max)
-}
