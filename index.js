@@ -16,6 +16,15 @@ app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`)
 })
 
+const errorHandler = (error, request, response, next) => {
+    console.error(error.message)
+
+    if (error.name === 'CastError') {
+        return response.status(400).send({ error: 'malformatted id'})
+    }
+}
+app.use(errorHandler)
+
 app.get('/info', (request, response) => {
     var dateTime = new Date()
     response.send(`<p>Phonebook has info for ${persons.length} people</p><p>${dateTime}</p>`)
@@ -23,21 +32,38 @@ app.get('/info', (request, response) => {
 
 app.get('/api/persons', (request, response) => {
     Contact.find({}).then(contact => {
-        response.json(contact)
+        if (contact) {
+            response.json(contact)
+        } else {
+            response.status(404).end()
+        }
     })
 })
 
-app.get('/api/persons/:id', (request, response) => {
+app.get('/api/persons/:id', (request, response, next) => {
     Contact
         .findById(request.params.id)
-        .then(contact => response.json(contact))
+        .then(contact => {
+            if (contact) {
+                response.json(contact)
+            } else {
+                response.status(404).end()
+            }
+        })
+        .catch((error) => {
+            error => next(error)
+        })
 })
 
-app.delete('/api/persons/:id', (request, response) => {
-    const id = Number(request.params.id)
-    console.log(id);
-    persons = persons.filter(person => person.id !== id)
-    response.status(204).end()
+app.delete('/api/persons/:id', (request, response, next) => {
+    Contact
+        .findByIdAndRemove(request.params.id)
+        .then(result => {
+            response.status(204).end()
+        })
+        .catch((error) => {
+            error => next(error)
+        })
 })
 
 morgan.token('body', function (req, res) {return JSON.stringify(req.body)})
@@ -58,4 +84,15 @@ app.post('/api/persons', (request, response) => {
     })
 
     person.save().then(savedPerson => {response.json(savedPerson)})
+})
+
+app.put('/api/persons/:id', (request, response, next) => {
+    const body = request.body
+    Contact.findByIdAndUpdate(request.params.id, {number: body.number}, {new: true})
+           .then(result => {
+            response.json(result)
+        })
+           .catch((error) => {
+            error => next(error)
+           })
 })
