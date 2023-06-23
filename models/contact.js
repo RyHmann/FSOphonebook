@@ -11,9 +11,32 @@ mongoose.connect(url)
         console.log('error connecting to MongoDB:', error.message)
     })
 
+
+const numberFormatValidator = (val) => {
+    let reg = /^\d{2,3}[-]\d+$/
+    return reg.test(val)
+}
+
+const numberLengthValidator = (val) => {
+    return val.length  > 7
+}
+
+const phoneNumberValidator = [
+    {validator: numberFormatValidator, message: 'Phone number requires a dash or hyphen'},
+    {validator: numberLengthValidator, message: 'Phone number must be at least 8 digits long'}
+]
+
+
 const contactSchema = new mongoose.Schema({
-    name: String,
-    number: String
+    name: {
+        type: String,
+        minLength: 3,
+        required: true
+    },
+    number: {
+        type: String,
+        validate: phoneNumberValidator
+    }
 })
 
 contactSchema.set('toJSON', {
