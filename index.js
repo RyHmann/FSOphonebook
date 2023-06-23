@@ -82,12 +82,8 @@ app.put('/api/persons/:id', (request, response, next) => {
     })
     
     Contact.findByIdAndUpdate(request.params.id, person, {new: true, runValidators: true, context: 'query'})
-           .then(result => {
-            response.json(result)
-        })
-           .catch((error) => {
-            error => next(error)
-           })
+           .then(result => response.json(result))
+           .catch(error => next(error))
 })
 
 const unknownEndpoint = (request, response) => {
